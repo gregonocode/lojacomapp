@@ -4,12 +4,19 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowRightIcon,
+  AtSymbolIcon,
+  BanknotesIcon,
+  BuildingStorefrontIcon,
   CheckCircleIcon,
   CloudArrowUpIcon,
   DevicePhoneMobileIcon,
   EyeIcon,
+  LinkIcon,
+  MapPinIcon,
   PaintBrushIcon,
+  PhoneIcon,
   ShoppingBagIcon,
+  SwatchIcon,
 } from '@heroicons/react/24/outline';
 import { createClient } from '@/app/lib/supabase/client';
 
@@ -47,7 +54,6 @@ export default function LojaOnboardingForm({
   const supabase = createClient();
 
   const [nome, setNome] = useState(loja?.nome || '');
-  const [slug, setSlug] = useState(loja?.slug || '');
   const [descricao, setDescricao] = useState(loja?.descricao || '');
   const [whatsapp, setWhatsapp] = useState(loja?.whatsapp || '');
   const [emailContato, setEmailContato] = useState(
@@ -74,6 +80,7 @@ export default function LojaOnboardingForm({
   const [sucesso, setSucesso] = useState<string | null>(null);
 
   const lojaJaCriada = Boolean(loja?.id);
+  const slug = useMemo(() => slugify(nome), [nome]);
 
   const publicUrl = useMemo(() => {
     if (!slug) {
@@ -83,23 +90,16 @@ export default function LojaOnboardingForm({
     return `lojacomapp.com.br/${slug}`;
   }, [slug]);
 
-  function handleNomeChange(value: string) {
-    setNome(value);
-
-    if (!lojaJaCriada && !slug) {
-      setSlug(slugify(value));
-    }
-  }
-
-  function handleSlugChange(value: string) {
-    setSlug(slugify(value));
-  }
-
   async function handleLogoUpload(file: File) {
     setErro(null);
     setSucesso(null);
 
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+    const allowedTypes = [
+      'image/png',
+      'image/jpeg',
+      'image/webp',
+      'image/svg+xml',
+    ];
 
     if (!allowedTypes.includes(file.type)) {
       setErro('Envie uma imagem PNG, JPG, WEBP ou SVG.');
@@ -160,14 +160,14 @@ export default function LojaOnboardingForm({
         throw new Error('Informe o nome da loja.');
       }
 
-      if (!slug.trim()) {
-        throw new Error('Informe o link da loja.');
+      if (!slug) {
+        throw new Error('Informe um nome válido para gerar o link da loja.');
       }
 
       const payload = {
         proprietario_id: userId,
         nome: nome.trim(),
-        slug: slug.trim(),
+        slug,
         descricao: descricao.trim() || null,
         logo_url: logoUrl || null,
         cor_primaria: corPrimaria || '#111827',
@@ -209,16 +209,25 @@ export default function LojaOnboardingForm({
 
       router.refresh();
     } catch (error) {
+      const normalizedMessage = getErrorMessage(error);
+      const normalizedCode = getErrorCode(error);
       const message =
         error instanceof Error
           ? error.message
           : 'Não foi possível salvar a loja.';
 
       if (
-        message.toLowerCase().includes('duplicate') ||
-        message.toLowerCase().includes('unique')
+        normalizedMessage.toLowerCase().includes('duplicate') ||
+        normalizedMessage.toLowerCase().includes('unique')
       ) {
         setErro('Esse link de loja já está em uso. Escolha outro.');
+      } else if (
+        normalizedCode === '23503' ||
+        normalizedMessage.includes('lojas_proprietario_id_fkey')
+      ) {
+        setErro(
+          'Seu usuário ainda não está vinculado corretamente ao cadastro de lojas. Ajuste a chave estrangeira proprietario_id no Supabase e tente salvar novamente.',
+        );
       } else {
         setErro(message);
       }
@@ -229,81 +238,89 @@ export default function LojaOnboardingForm({
 
   return (
     <div className="mx-auto max-w-7xl">
-      <section className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-xs font-bold text-zinc-500 shadow-sm">
-            <DevicePhoneMobileIcon className="h-4 w-4 text-lime-500" />
-            Configuração do app da loja
+      <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-5 border-b border-zinc-100 px-5 py-5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-800">
+              <DevicePhoneMobileIcon className="h-4 w-4" />
+              Configuração do app da loja
+            </div>
+
+            <h1 className="mt-4 text-2xl font-bold tracking-tight text-zinc-950 lg:text-4xl">
+              {lojaJaCriada ? 'Editar sua loja' : 'Crie sua loja virtual'}
+            </h1>
+
+            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-zinc-500">
+              Ajuste o cadastro público, os dados de atendimento e a aparência
+              do app instalado no celular.
+            </p>
           </div>
 
-          <h1 className="mt-5 text-3xl font-black tracking-[-0.05em] text-zinc-950 lg:text-5xl">
-            {lojaJaCriada ? 'Editar sua loja' : 'Crie sua loja virtual'}
-          </h1>
-
-          <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-zinc-500">
-            Essas informações serão usadas na loja pública e também no PWA que
-            o cliente instala no celular.
-          </p>
+          {slug && (
+            <a
+              href={`/${slug}`}
+              target="_blank"
+              className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+            >
+              Ver loja
+              <EyeIcon className="h-4 w-4" />
+            </a>
+          )}
         </div>
 
-        {slug && (
-          <a
-            href={`/${slug}`}
-            target="_blank"
-            className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50"
-          >
-            Ver loja
-            <EyeIcon className="h-4 w-4" />
-          </a>
-        )}
+        <div className="grid gap-3 bg-[#fafaf8] px-5 py-4 sm:grid-cols-3 lg:px-6">
+          <SummaryPill
+            icon={BuildingStorefrontIcon}
+            label="Status"
+            value={lojaJaCriada ? 'Loja configurada' : 'Primeira configuração'}
+          />
+          <SummaryPill icon={LinkIcon} label="Link automático" value={publicUrl} />
+          <SummaryPill
+            icon={SwatchIcon}
+            label="Cor principal"
+            value={corPrimaria.toUpperCase()}
+          />
+        </div>
       </section>
 
       <form
         onSubmit={handleSubmit}
-        className="mt-7 grid gap-5 xl:grid-cols-[1.35fr_0.75fr]"
+        className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]"
       >
         <div className="space-y-5">
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm lg:p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-lime-300 text-zinc-950">
-                <ShoppingBagIcon className="h-6 w-6" />
-              </div>
-
-              <div>
-                <h2 className="text-lg font-black tracking-[-0.04em] text-zinc-950">
-                  Dados principais
-                </h2>
-                <p className="text-sm font-medium text-zinc-400">
-                  Nome, link e apresentação da loja.
-                </p>
-              </div>
-            </div>
-
+          <SectionCard
+            icon={ShoppingBagIcon}
+            title="Dados principais"
+            description="Nome, link público e apresentação da loja."
+            tone="primary"
+          >
             <div className="mt-6 grid gap-5 md:grid-cols-2">
               <Field label="Nome da loja">
                 <input
                   value={nome}
-                  onChange={(event) => handleNomeChange(event.target.value)}
+                  onChange={(event) => setNome(event.target.value)}
                   placeholder="Ex. Velune"
                   required
                   className="input-store"
                 />
               </Field>
 
-              <Field label="Link da loja">
-                <div className="flex h-12 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/5">
-                  <span className="flex items-center border-r border-zinc-200 px-4 text-sm font-bold text-zinc-400">
+              <div>
+                <span className="mb-2 block text-sm font-black text-zinc-700">
+                  Link automático
+                </span>
+                <div className="flex h-12 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
+                  <span className="flex items-center border-r border-zinc-200 px-3 text-sm font-bold text-zinc-400">
                     /
                   </span>
-                  <input
-                    value={slug}
-                    onChange={(event) => handleSlugChange(event.target.value)}
-                    placeholder="sua-loja"
-                    required
-                    className="h-full min-w-0 flex-1 bg-transparent px-4 text-sm font-bold text-zinc-950 outline-none placeholder:text-zinc-300"
-                  />
+                  <div className="flex min-w-0 flex-1 items-center px-4 text-sm font-bold text-zinc-950">
+                    <span className="truncate">{slug || 'sua-loja'}</span>
+                  </div>
                 </div>
-              </Field>
+                <p className="mt-2 text-xs font-medium leading-5 text-zinc-400">
+                  Gerado automaticamente a partir do nome da loja.
+                </p>
+              </div>
 
               <div className="md:col-span-2">
                 <Field label="Descrição curta">
@@ -312,33 +329,22 @@ export default function LojaOnboardingForm({
                     onChange={(event) => setDescricao(event.target.value)}
                     placeholder="Ex. Moda, acessórios e produtos selecionados para seu estilo."
                     rows={4}
-                    className="min-h-28 w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-950 outline-none transition placeholder:text-zinc-300 focus:border-zinc-950 focus:ring-4 focus:ring-zinc-950/5"
+                    className="min-h-28 w-full resize-none rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-950 outline-none transition placeholder:text-zinc-300 focus:border-zinc-950 focus:ring-4 focus:ring-zinc-950/5"
                   />
                 </Field>
               </div>
             </div>
-          </div>
+          </SectionCard>
 
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm lg:p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-700">
-                <PaintBrushIcon className="h-5 w-5" />
-              </div>
-
-              <div>
-                <h2 className="text-lg font-black tracking-[-0.04em] text-zinc-950">
-                  Identidade do app
-                </h2>
-                <p className="text-sm font-medium text-zinc-400">
-                  Logo e cor principal usadas no PWA.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-5 md:grid-cols-[0.7fr_1.3fr]">
-              <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-4">
+          <SectionCard
+            icon={PaintBrushIcon}
+            title="Identidade do app"
+            description="Logo e cor principal usadas no PWA."
+          >
+            <div className="mt-6 grid gap-5 md:grid-cols-[180px_1fr]">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 p-4">
                 <div
-                  className="mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-[2rem] text-white shadow-sm"
+                  className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-2xl text-white shadow-sm"
                   style={{ backgroundColor: corPrimaria }}
                 >
                   {logoPreview ? (
@@ -360,7 +366,7 @@ export default function LojaOnboardingForm({
 
               <div className="space-y-5">
                 <Field label="Logo/ícone da loja">
-                  <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-center transition hover:bg-zinc-100">
+                  <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-center transition hover:border-purple-300 hover:bg-purple-50/60">
                     <CloudArrowUpIcon className="h-7 w-7 text-zinc-400" />
                     <span className="mt-2 text-sm font-black text-zinc-700">
                       {uploadingLogo ? 'Enviando...' : 'Enviar logo'}
@@ -386,7 +392,7 @@ export default function LojaOnboardingForm({
                 </Field>
 
                 <Field label="Cor principal">
-                  <div className="flex h-12 items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-3">
+                  <div className="flex h-12 items-center gap-3 rounded-lg border border-zinc-200 bg-white px-3 focus-within:border-zinc-950 focus-within:ring-4 focus-within:ring-zinc-950/5">
                     <input
                       type="color"
                       value={corPrimaria}
@@ -403,17 +409,13 @@ export default function LojaOnboardingForm({
                 </Field>
               </div>
             </div>
-          </div>
+          </SectionCard>
 
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm lg:p-6">
-            <h2 className="text-lg font-black tracking-[-0.04em] text-zinc-950">
-              Contato e pagamento
-            </h2>
-
-            <p className="mt-1 text-sm font-medium text-zinc-400">
-              Dados usados no checkout e atendimento.
-            </p>
-
+          <SectionCard
+            icon={PhoneIcon}
+            title="Contato e pagamento"
+            description="Dados usados no checkout e atendimento."
+          >
             <div className="mt-6 grid gap-5 md:grid-cols-2">
               <Field label="WhatsApp">
                 <input
@@ -452,17 +454,13 @@ export default function LojaOnboardingForm({
                 />
               </Field>
             </div>
-          </div>
+          </SectionCard>
 
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm lg:p-6">
-            <h2 className="text-lg font-black tracking-[-0.04em] text-zinc-950">
-              Endereço da loja
-            </h2>
-
-            <p className="mt-1 text-sm font-medium text-zinc-400">
-              Útil para retirada, entrega local e informações públicas.
-            </p>
-
+          <SectionCard
+            icon={MapPinIcon}
+            title="Endereço da loja"
+            description="Útil para retirada, entrega local e informações públicas."
+          >
             <div className="mt-6 grid gap-5 md:grid-cols-2">
               <div className="md:col-span-2">
                 <Field label="Endereço">
@@ -504,47 +502,57 @@ export default function LojaOnboardingForm({
                 />
               </Field>
             </div>
-          </div>
+          </SectionCard>
         </div>
 
-        <aside className="space-y-5">
-          <div className="sticky top-8 rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-            <div className="rounded-[1.7rem] border border-zinc-200 bg-zinc-50 p-4">
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl text-white"
-                  style={{ backgroundColor: corPrimaria }}
-                >
-                  {logoPreview ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={logoPreview}
-                      alt="Logo"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <ShoppingBagIcon className="h-6 w-6" />
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-zinc-950">
-                    {nome || 'Nome da loja'}
-                  </p>
-                  <p className="truncate text-xs font-bold text-zinc-400">
-                    {publicUrl}
-                  </p>
-                </div>
+        <aside>
+          <div className="sticky top-8 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase text-zinc-400">
+                  Prévia
+                </p>
+                <h2 className="mt-1 text-lg font-bold tracking-tight text-zinc-950">
+                  App da loja
+                </h2>
               </div>
 
               <div
-                className="mt-5 rounded-[1.4rem] p-4 text-white"
+                className="h-9 w-9 rounded-full"
+                style={{ backgroundColor: corPrimaria }}
+              />
+            </div>
+
+            <div className="mt-5 overflow-hidden rounded-2xl border border-zinc-200 bg-[#f7f7f5]">
+              <div
+                className="px-4 py-5 text-white"
                 style={{ backgroundColor: corPrimaria }}
               >
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/70">
-                  Loja com app
-                </p>
-                <p className="mt-2 text-xl font-black tracking-[-0.05em]">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white/15 text-white ring-1 ring-white/20">
+                    {logoPreview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={logoPreview}
+                        alt="Logo"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <ShoppingBagIcon className="h-6 w-6" />
+                    )}
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black">
+                      {nome || 'Nome da loja'}
+                    </p>
+                    <p className="truncate text-xs font-bold text-white/70">
+                      /{slug || 'sua-loja'}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="mt-5 text-2xl font-bold tracking-tight">
                   {nome || 'Sua loja'}
                 </p>
                 <p className="mt-2 line-clamp-2 text-xs font-medium leading-5 text-white/75">
@@ -552,16 +560,34 @@ export default function LojaOnboardingForm({
                     'Sua loja online pronta para vender e ser instalada no celular.'}
                 </p>
               </div>
+
+              <div className="space-y-3 p-4">
+                <PreviewRow
+                  icon={LinkIcon}
+                  label="Link público"
+                  value={publicUrl}
+                />
+                <PreviewRow
+                  icon={AtSymbolIcon}
+                  label="Contato"
+                  value={emailContato || 'contato@loja.com'}
+                />
+                <PreviewRow
+                  icon={BanknotesIcon}
+                  label="Pix"
+                  value={pixChave || 'Não informado'}
+                />
+              </div>
             </div>
 
             {erro && (
-              <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
                 {erro}
               </div>
             )}
 
             {sucesso && (
-              <div className="mt-4 flex items-start gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+              <div className="mt-4 flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
                 <CheckCircleIcon className="mt-0.5 h-5 w-5 shrink-0" />
                 {sucesso}
               </div>
@@ -570,7 +596,7 @@ export default function LojaOnboardingForm({
             <button
               type="submit"
               disabled={loading || uploadingLogo}
-              className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 text-sm font-black text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-purple-700 text-sm font-black text-white transition hover:bg-purple-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading
                 ? 'Salvando...'
@@ -582,7 +608,7 @@ export default function LojaOnboardingForm({
             </button>
 
             <p className="mt-3 text-center text-xs font-medium leading-5 text-zinc-400">
-              Depois vamos usar esses dados no app público e no manifesto PWA.
+              O link é atualizado automaticamente quando o nome muda.
             </p>
           </div>
         </aside>
@@ -592,7 +618,7 @@ export default function LojaOnboardingForm({
         .input-store {
           height: 3rem;
           width: 100%;
-          border-radius: 1rem;
+          border-radius: 0.5rem;
           border: 1px solid rgb(228 228 231);
           background: white;
           padding: 0 1rem;
@@ -612,6 +638,88 @@ export default function LojaOnboardingForm({
           box-shadow: 0 0 0 4px rgb(9 9 11 / 0.05);
         }
       `}</style>
+    </div>
+  );
+}
+
+function SectionCard({
+  icon: Icon,
+  title,
+  description,
+  tone = 'neutral',
+  children,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  tone?: 'neutral' | 'primary';
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm lg:p-6">
+      <div className="flex items-center gap-3">
+        <div
+          className={[
+            'flex h-11 w-11 items-center justify-center rounded-xl',
+            tone === 'primary'
+              ? 'bg-purple-100 text-purple-800'
+              : 'bg-zinc-100 text-zinc-700',
+          ].join(' ')}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
+
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-zinc-950">
+            {title}
+          </h2>
+          <p className="text-sm font-medium text-zinc-400">{description}</p>
+        </div>
+      </div>
+
+      {children}
+    </section>
+  );
+}
+
+function SummaryPill({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-3">
+      <Icon className="h-5 w-5 shrink-0 text-purple-700" />
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold uppercase text-zinc-400">{label}</p>
+        <p className="truncate text-sm font-bold text-zinc-950">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function PreviewRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-zinc-500 shadow-sm ring-1 ring-zinc-200">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold uppercase text-zinc-400">{label}</p>
+        <p className="truncate text-sm font-bold text-zinc-800">{value}</p>
+      </div>
     </div>
   );
 }
@@ -643,4 +751,34 @@ function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 48);
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
+  }
+
+  return 'Não foi possível salvar a loja.';
+}
+
+function getErrorCode(error: unknown) {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof error.code === 'string'
+  ) {
+    return error.code;
+  }
+
+  return null;
 }
