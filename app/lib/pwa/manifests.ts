@@ -55,3 +55,78 @@ export function createSystemManifest(): MetadataRoute.Manifest {
     ],
   };
 }
+
+type StoreManifestInput = {
+  name: string;
+  shortName: string;
+  description: string;
+  slug: string;
+  themeColor: string;
+  iconUrl: string | null;
+};
+
+export function createStoreManifest({
+  name,
+  shortName,
+  description,
+  slug,
+  themeColor,
+  iconUrl,
+}: StoreManifestInput): MetadataRoute.Manifest {
+  const fallbackIcons = [
+    {
+      src: systemPwa.icons.icon192,
+      sizes: '192x192',
+      type: 'image/png',
+      purpose: 'any',
+    },
+    {
+      src: systemPwa.icons.icon512,
+      sizes: '512x512',
+      type: 'image/png',
+      purpose: 'any',
+    },
+    {
+      src: systemPwa.icons.maskable192,
+      sizes: '192x192',
+      type: 'image/png',
+      purpose: 'maskable',
+    },
+    {
+      src: systemPwa.icons.maskable512,
+      sizes: '512x512',
+      type: 'image/png',
+      purpose: 'maskable',
+    },
+  ] satisfies MetadataRoute.Manifest['icons'];
+
+  const storeIcons = iconUrl
+    ? ([
+        {
+          src: iconUrl,
+          sizes: iconUrl.endsWith('.svg') ? 'any' : '192x192',
+          type: iconUrl.endsWith('.svg') ? 'image/svg+xml' : 'image/png',
+          purpose: 'any',
+        },
+        {
+          src: iconUrl,
+          sizes: iconUrl.endsWith('.svg') ? 'any' : '512x512',
+          type: iconUrl.endsWith('.svg') ? 'image/svg+xml' : 'image/png',
+          purpose: 'maskable',
+        },
+      ] satisfies MetadataRoute.Manifest['icons'])
+    : fallbackIcons;
+
+  return {
+    name,
+    short_name: shortName,
+    description,
+    start_url: `/${slug}`,
+    scope: `/${slug}`,
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#f7f7f8',
+    theme_color: themeColor,
+    icons: storeIcons,
+  };
+}

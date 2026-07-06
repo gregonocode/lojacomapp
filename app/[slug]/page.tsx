@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
@@ -15,6 +15,9 @@ import {
   TagIcon,
   UserIcon,
 } from '@heroicons/react/24/outline';
+import StorePwaInstallPrompt from '@/app/components/pwa/StorePwaInstallPrompt';
+import { SystemPwaRegistrar } from '@/app/components/system-pwa-registrar';
+import { systemPwa } from '@/app/lib/pwa/manifests';
 import { createClient } from '@/app/lib/supabase/server';
 
 const categorias = [
@@ -123,11 +126,31 @@ export async function generateMetadata({
   return {
     title: loja.nome,
     description,
+    manifest: `/manifest/${encodeURIComponent(loja.slug)}`,
+    appleWebApp: {
+      capable: true,
+      title: loja.nome,
+      statusBarStyle: 'black-translucent',
+    },
+    icons: {
+      apple: loja.logo_url || systemPwa.icons.icon192,
+    },
     openGraph: {
       title: loja.nome,
       description,
       images: loja.logo_url ? [loja.logo_url] : undefined,
     },
+  };
+}
+
+export async function generateViewport({
+  params,
+}: LojaPageProps): Promise<Viewport> {
+  const { slug } = await params;
+  const loja = await getLojaBySlug(slug);
+
+  return {
+    themeColor: getSafeStoreColor(loja?.cor_primaria || null),
   };
 }
 
@@ -145,7 +168,16 @@ export default async function LojaPage({ params }: LojaPageProps) {
     'Produtos selecionados para você comprar online com praticidade.';
 
   return (
-    <main className="min-h-screen bg-[#f3f3f5] text-zinc-950">
+    <>
+      <SystemPwaRegistrar />
+      <StorePwaInstallPrompt
+        storeName={loja.nome}
+        storeShortName={loja.nome.slice(0, 12)}
+        storeIcon={loja.logo_url}
+        themeColor={primaryColor}
+        slug={loja.slug}
+      />
+      <main className="min-h-screen bg-[#f3f3f5] text-zinc-950">
       <div className="mx-auto min-h-screen max-w-md bg-[#f7f7f8] pb-28 shadow-2xl shadow-zinc-300/70">
         <header className="sticky top-0 z-30 bg-[#f7f7f8]/90 px-5 pb-3 pt-5 backdrop-blur-xl">
           <div className="flex items-center justify-between gap-4">
@@ -406,7 +438,8 @@ export default async function LojaPage({ params }: LojaPageProps) {
           </div>
         </nav>
       </div>
-    </main>
+      </main>
+    </>
   );
 }
 
