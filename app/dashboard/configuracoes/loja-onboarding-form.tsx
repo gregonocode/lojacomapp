@@ -241,7 +241,7 @@ export default function LojaOnboardingForm({
       <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
         <div className="flex flex-col gap-5 border-b border-zinc-100 px-5 py-5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
           <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-800">
+            <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-bold text-zinc-700">
               <DevicePhoneMobileIcon className="h-4 w-4" />
               Configuração do app da loja
             </div>
@@ -292,7 +292,6 @@ export default function LojaOnboardingForm({
             icon={ShoppingBagIcon}
             title="Dados principais"
             description="Nome, link público e apresentação da loja."
-            tone="primary"
           >
             <div className="mt-6 grid gap-5 md:grid-cols-2">
               <Field label="Nome da loja">
@@ -366,7 +365,7 @@ export default function LojaOnboardingForm({
 
               <div className="space-y-5">
                 <Field label="Logo/ícone da loja">
-                  <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-center transition hover:border-purple-300 hover:bg-purple-50/60">
+                  <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-center transition hover:border-zinc-400 hover:bg-zinc-100">
                     <CloudArrowUpIcon className="h-7 w-7 text-zinc-400" />
                     <span className="mt-2 text-sm font-black text-zinc-700">
                       {uploadingLogo ? 'Enviando...' : 'Enviar logo'}
@@ -596,7 +595,7 @@ export default function LojaOnboardingForm({
             <button
               type="submit"
               disabled={loading || uploadingLogo}
-              className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-purple-700 text-sm font-black text-white transition hover:bg-purple-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#181818] text-sm font-black text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading
                 ? 'Salvando...'
@@ -646,25 +645,18 @@ function SectionCard({
   icon: Icon,
   title,
   description,
-  tone = 'neutral',
   children,
 }: {
   icon: React.ElementType;
   title: string;
   description: string;
-  tone?: 'neutral' | 'primary';
   children: React.ReactNode;
 }) {
   return (
     <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm lg:p-6">
       <div className="flex items-center gap-3">
         <div
-          className={[
-            'flex h-11 w-11 items-center justify-center rounded-xl',
-            tone === 'primary'
-              ? 'bg-purple-100 text-purple-800'
-              : 'bg-zinc-100 text-zinc-700',
-          ].join(' ')}
+          className="flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700"
         >
           <Icon className="h-5 w-5" />
         </div>
@@ -693,7 +685,7 @@ function SummaryPill({
 }) {
   return (
     <div className="flex min-w-0 items-center gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-3">
-      <Icon className="h-5 w-5 shrink-0 text-purple-700" />
+      <Icon className="h-5 w-5 shrink-0 text-zinc-500" />
       <div className="min-w-0">
         <p className="text-[11px] font-bold uppercase text-zinc-400">{label}</p>
         <p className="truncate text-sm font-bold text-zinc-950">{value}</p>
