@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { PwaInstallPrompt } from '@/app/components/pwa/PwaInstallPrompt';
 import { SystemPwaRegistrar } from '@/app/components/system-pwa-registrar';
 import { systemPwa } from '@/app/lib/pwa/manifests';
 
@@ -28,6 +29,7 @@ export default function LoginLayout({
   return (
     <>
       <SystemPwaRegistrar />
+      <PwaInstallPrompt />
       {children}
     </>
   );

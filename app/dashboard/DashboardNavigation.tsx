@@ -1,0 +1,145 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  ChartBarIcon,
+  ChevronDownIcon,
+  Cog6ToothIcon,
+  HomeIcon,
+  PaintBrushIcon,
+  ShoppingBagIcon,
+  Squares2X2Icon,
+  TagIcon,
+  TruckIcon,
+} from '@heroicons/react/24/outline';
+
+const navigation = [
+  {
+    name: 'Início',
+    href: '/dashboard',
+    icon: HomeIcon,
+  },
+  {
+    name: 'Análises',
+    href: '/dashboard/relatorios',
+    icon: ChartBarIcon,
+  },
+  {
+    name: 'Produtos',
+    href: '/dashboard/produtos',
+    icon: ShoppingBagIcon,
+  },
+  {
+    name: 'Pedidos',
+    href: '/dashboard/pedidos',
+    icon: Squares2X2Icon,
+  },
+  {
+    name: 'Categorias',
+    href: '/dashboard/categorias',
+    icon: TagIcon,
+  },
+  {
+    name: 'Entrega',
+    href: '/dashboard/entrega',
+    icon: TruckIcon,
+  },
+  {
+    name: 'Tema',
+    href: '/dashboard/tema',
+    icon: PaintBrushIcon,
+  },
+  {
+    name: 'Configurações',
+    href: '/dashboard/configuracoes',
+    icon: Cog6ToothIcon,
+  },
+];
+
+function isActivePath(pathname: string, href: string) {
+  if (href === '/dashboard') {
+    return pathname === href;
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export function DashboardNavigation() {
+  const pathname = usePathname();
+
+  return (
+    <nav className="mt-3 flex-1 space-y-1">
+      {navigation.map((item) => {
+        const active = isActivePath(pathname, item.href);
+
+        return (
+          <Link
+            key={item.name}
+            href={item.href}
+            className={[
+              'group flex h-10 items-center justify-between rounded-lg px-3 text-sm transition',
+              active
+                ? 'bg-white text-zinc-950 shadow-sm ring-1 ring-zinc-200'
+                : 'text-zinc-600 hover:bg-white/70 hover:text-zinc-950',
+            ].join(' ')}
+          >
+            <span
+              className={[
+                'flex items-center gap-3',
+                active ? 'font-bold' : 'font-medium',
+              ].join(' ')}
+            >
+              <item.icon
+                className={[
+                  'h-5 w-5 shrink-0',
+                  active
+                    ? 'text-purple-700'
+                    : 'text-zinc-400 group-hover:text-zinc-700',
+                ].join(' ')}
+              />
+              {item.name}
+            </span>
+
+            {['Produtos', 'Pedidos', 'Configurações'].includes(item.name) && (
+              <ChevronDownIcon
+                className={[
+                  'h-4 w-4',
+                  active ? 'text-zinc-500' : 'text-zinc-300',
+                ].join(' ')}
+              />
+            )}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+export function DashboardMobileNavigation() {
+  const pathname = usePathname();
+
+  return (
+    <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+      {navigation.slice(0, 6).map((item) => {
+        const active = isActivePath(pathname, item.href);
+
+        return (
+          <Link
+            key={item.name}
+            href={item.href}
+            className={[
+              'flex h-10 shrink-0 items-center gap-2 rounded-lg border px-3 text-xs transition',
+              active
+                ? 'border-purple-200 bg-purple-50 font-bold text-purple-800'
+                : 'border-zinc-200 bg-white font-medium text-zinc-600',
+            ].join(' ')}
+          >
+            <item.icon className="h-4 w-4" />
+            {item.name}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
