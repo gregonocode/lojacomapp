@@ -1,54 +1,37 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import {
   ArrowLeftIcon,
   HeartIcon,
   MinusIcon,
   PlusIcon,
+  ShoppingBagIcon,
   ShoppingCartIcon,
-  StarIcon,
   TruckIcon,
 } from '@heroicons/react/24/outline';
+import { createClient } from '@/app/lib/supabase/server';
 
-const produtos = [
-  {
-    id: '1',
-    nome: 'Nike Air Max 270 React',
-    marca: 'Nike',
-    preco: 145,
-    precoAntigo: 180,
-    nota: 4.9,
-    avaliacoes: 256,
-    descricao:
-      'Tênis clássico com visual moderno, confortável para o dia a dia e perfeito para compor looks casuais. Possui acabamento premium, solado macio e ótimo encaixe nos pés.',
-    imagem:
-      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1000&auto=format&fit=crop',
-    imagens: [
-      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1000&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=1000&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1608231387042-66d1773070a5?q=80&w=1000&auto=format&fit=crop',
-    ],
-  },
-  {
-    id: '2',
-    nome: 'Adidas Ultraboost 22',
-    marca: 'Adidas',
-    preco: 190,
-    precoAntigo: null,
-    nota: 4.8,
-    avaliacoes: 180,
-    descricao:
-      'Modelo confortável, leve e ideal para quem busca estilo e praticidade. Perfeito para usar no trabalho, passeio ou no dia a dia.',
-    imagem:
-      'https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=1000&auto=format&fit=crop',
-    imagens: [
-      'https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=1000&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=1000&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1608231387042-66d1773070a5?q=80&w=1000&auto=format&fit=crop',
-    ],
-  },
-];
+type Produto = {
+  id: string;
+  loja_id: string;
+  nome: string;
+  marca: string | null;
+  descricao: string | null;
+  preco: number | string | null;
+  preco_antigo: number | string | null;
+  imagem_url: string | null;
+  estoque: number | null;
+  ativo: boolean | null;
+};
 
-const tamanhos = ['38', '39', '40', '41', '42', '43', '44'];
+type Loja = {
+  id: string;
+  nome: string;
+  slug: string;
+  cor_primaria: string | null;
+  ativa: boolean;
+};
 
 type ProdutoPageProps = {
   params: Promise<{
@@ -59,8 +42,21 @@ type ProdutoPageProps = {
 
 export default async function ProdutoPage({ params }: ProdutoPageProps) {
   const { slug, id } = await params;
+  const loja = await getLojaBySlug(slug);
 
-  const produto = produtos.find((item) => item.id === id) || produtos[0];
+  if (!loja) {
+    notFound();
+  }
+
+  const produto = await getProdutoById(loja.id, id);
+
+  if (!produto) {
+    notFound();
+  }
+
+  const primaryColor = getSafeStoreColor(loja.cor_primaria);
+  const semEstoque = Number(produto.estoque ?? 0) <= 0;
+  const imagens = produto.imagem_url ? [produto.imagem_url] : [];
 
   return (
     <main className="min-h-screen bg-[#f3f3f5] text-zinc-950">
@@ -68,53 +64,57 @@ export default async function ProdutoPage({ params }: ProdutoPageProps) {
         <header className="sticky top-0 z-30 bg-[#f7f7f8]/90 px-5 pb-3 pt-5 backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <Link
-              href={`/${slug}`}
+              href={`/${loja.slug}`}
               className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-zinc-800 shadow-sm"
             >
               <ArrowLeftIcon className="h-5 w-5" />
             </Link>
 
-            <p className="text-sm font-black tracking-[-0.03em]">
-              Detalhes do produto
-            </p>
+            <p className="text-sm font-black">Detalhes do produto</p>
 
             <Link
-              href={`/${slug}/carrinho`}
+              href={`/${loja.slug}/carrinho`}
               className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-zinc-800 shadow-sm"
             >
               <ShoppingCartIcon className="h-5 w-5" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-orange-500" />
+              <span
+                className="absolute right-2 top-2 h-2 w-2 rounded-full"
+                style={{ backgroundColor: primaryColor }}
+              />
             </Link>
           </div>
         </header>
 
         <section className="px-5 pt-3">
-          <div className="flex gap-3">
-            {produto.imagens.map((imagem, index) => (
-              <button
-                key={imagem}
-                className={[
-                  'flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border bg-white shadow-sm',
-                  index === 0 ? 'border-black' : 'border-transparent',
-                ].join(' ')}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={imagem}
-                  alt={`${produto.nome} miniatura ${index + 1}`}
-                  className="h-full w-full object-cover"
-                />
-              </button>
-            ))}
-          </div>
+          {imagens.length > 0 && (
+            <div className="flex gap-3">
+              {imagens.map((imagem) => (
+                <button
+                  key={imagem}
+                  className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-black bg-white shadow-sm"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imagem}
+                    alt={`${produto.nome} miniatura`}
+                    className="h-full w-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="mt-5 flex aspect-square items-center justify-center overflow-hidden rounded-[2.2rem] bg-zinc-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={produto.imagem}
-              alt={produto.nome}
-              className="h-full w-full object-cover"
-            />
+            {produto.imagem_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={produto.imagem_url}
+                alt={produto.nome}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <ShoppingBagIcon className="h-20 w-20 text-zinc-300" />
+            )}
           </div>
         </section>
 
@@ -124,24 +124,15 @@ export default async function ProdutoPage({ params }: ProdutoPageProps) {
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
-                {produto.marca}
+                {produto.marca || loja.nome}
               </p>
 
-              <h1 className="mt-2 text-2xl font-black leading-7 tracking-[-0.05em] text-zinc-950">
+              <h1 className="mt-2 text-2xl font-black leading-7 text-zinc-950">
                 {produto.nome}
               </h1>
 
-              <div className="mt-3 flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  <StarIcon className="h-4 w-4 fill-orange-400 text-orange-400" />
-                  <span className="text-sm font-bold text-zinc-900">
-                    {produto.nota}
-                  </span>
-                </div>
-
-                <span className="text-xs font-medium text-zinc-400">
-                  ({produto.avaliacoes} avaliações)
-                </span>
+              <div className="mt-3 inline-flex rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-500">
+                {semEstoque ? 'Sem estoque' : `${produto.estoque ?? 0} em estoque`}
               </div>
             </div>
 
@@ -150,57 +141,24 @@ export default async function ProdutoPage({ params }: ProdutoPageProps) {
             </button>
           </div>
 
-          <div className="mt-6 flex items-end gap-2">
-            <p className="text-3xl font-black tracking-[-0.06em] text-zinc-950">
+          <div className="mt-6 flex flex-wrap items-end gap-2">
+            <p className="text-3xl font-black text-zinc-950">
               {formatCurrency(produto.preco)}
             </p>
 
-            {produto.precoAntigo && (
+            {produto.preco_antigo && (
               <p className="pb-1 text-sm font-bold text-zinc-300 line-through">
-                {formatCurrency(produto.precoAntigo)}
+                {formatCurrency(produto.preco_antigo)}
               </p>
             )}
           </div>
 
           <div className="mt-7">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-black tracking-[-0.03em]">
-                Escolha o tamanho
-              </h2>
-
-              <button className="text-xs font-semibold text-zinc-400">
-                Guia de tamanho
-              </button>
-            </div>
-
-            <div className="mt-4 flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {tamanhos.map((tamanho) => {
-                const ativo = tamanho === '42';
-
-                return (
-                  <button
-                    key={tamanho}
-                    className={[
-                      'flex h-12 min-w-12 items-center justify-center rounded-2xl text-sm font-black transition',
-                      ativo
-                        ? 'bg-black text-white shadow-xl shadow-black/15'
-                        : 'bg-zinc-100 text-zinc-500',
-                    ].join(' ')}
-                  >
-                    {tamanho}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="mt-7">
-            <h2 className="text-sm font-black tracking-[-0.03em]">
-              Descrição
-            </h2>
+            <h2 className="text-sm font-black">Descricao</h2>
 
             <p className="mt-3 text-sm leading-6 text-zinc-500">
-              {produto.descricao}
+              {produto.descricao ||
+                'O lojista ainda nao adicionou uma descricao para este produto.'}
             </p>
           </div>
 
@@ -215,8 +173,8 @@ export default async function ProdutoPage({ params }: ProdutoPageProps) {
                   Entrega e retirada
                 </p>
                 <p className="mt-1 text-xs leading-5 text-zinc-500">
-                  Escolha a melhor opção no checkout. O lojista confirma os
-                  detalhes após o pedido.
+                  Escolha a melhor opcao no checkout. O lojista confirma os
+                  detalhes apos o pedido.
                 </p>
               </div>
             </div>
@@ -229,7 +187,10 @@ export default async function ProdutoPage({ params }: ProdutoPageProps) {
 
             <span className="text-sm font-black">1</span>
 
-            <button className="flex h-11 w-11 items-center justify-center rounded-2xl bg-black text-white">
+            <button
+              className="flex h-11 w-11 items-center justify-center rounded-2xl text-white"
+              style={{ backgroundColor: primaryColor }}
+            >
               <PlusIcon className="h-5 w-5" />
             </button>
           </div>
@@ -237,11 +198,18 @@ export default async function ProdutoPage({ params }: ProdutoPageProps) {
 
         <div className="fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 border-t border-zinc-200/80 bg-white/90 px-5 py-4 backdrop-blur-xl">
           <div className="flex gap-3">
-            <button className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-black text-sm font-black text-white shadow-xl shadow-black/20">
+            <button
+              disabled={semEstoque}
+              className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl text-sm font-black text-white shadow-xl disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:shadow-none"
+              style={semEstoque ? undefined : { backgroundColor: primaryColor }}
+            >
               Comprar agora
             </button>
 
-            <button className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white text-sm font-black text-zinc-950">
+            <button
+              disabled={semEstoque}
+              className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white text-sm font-black text-zinc-950 disabled:cursor-not-allowed disabled:text-zinc-300"
+            >
               Add carrinho
               <ShoppingCartIcon className="h-5 w-5" />
             </button>
@@ -252,9 +220,69 @@ export default async function ProdutoPage({ params }: ProdutoPageProps) {
   );
 }
 
-function formatCurrency(value: number) {
+const getLojaBySlug = cache(async (slug: string) => {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('lojas')
+    .select('id, nome, slug, cor_primaria, ativa')
+    .eq('slug', slug)
+    .eq('ativa', true)
+    .maybeSingle<Loja>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+});
+
+const getProdutoById = cache(async (lojaId: string, id: string) => {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('produtos')
+    .select(
+      `
+      id,
+      loja_id,
+      nome,
+      marca,
+      descricao,
+      preco,
+      preco_antigo,
+      imagem_url,
+      estoque,
+      ativo
+    `,
+    )
+    .eq('loja_id', lojaId)
+    .eq('id', id)
+    .eq('ativo', true)
+    .maybeSingle<Produto>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+});
+
+function getSafeStoreColor(color: string | null) {
+  if (!color) {
+    return '#111827';
+  }
+
+  if (/^#[0-9a-f]{6}$/i.test(color) || /^#[0-9a-f]{3}$/i.test(color)) {
+    return color;
+  }
+
+  return '#111827';
+}
+
+function formatCurrency(value: number | string | null) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(value);
+  }).format(Number(value || 0));
 }
