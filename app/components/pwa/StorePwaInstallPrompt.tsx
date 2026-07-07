@@ -1,11 +1,12 @@
+//app\components\pwa\StorePwaInstallPrompt.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import {
   ArrowDownTrayIcon,
   ArrowUpOnSquareIcon,
+  BellAlertIcon,
   ClipboardDocumentIcon,
-  DevicePhoneMobileIcon,
   ShoppingBagIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -18,25 +19,19 @@ type BeforeInstallPromptEvent = Event & {
   }>;
 };
 
-export type StorePwaInstallPromptProps = {
-  storeName: string;
-  storeShortName: string;
-  storeIcon: string | null;
-  themeColor: string;
+type StorePwaInstallPromptProps = {
   slug: string;
+  appName: string;
+  iconUrl?: string | null;
+  themeColor?: string;
 };
 
-const DISMISSED_STORAGE_PREFIX = 'lojacomapp-store-pwa-install-dismissed';
-
 function isStandaloneMode() {
-  if (typeof window === 'undefined') {
-    return false;
-  }
+  if (typeof window === 'undefined') return false;
 
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
-    (window.navigator as Navigator & { standalone?: boolean }).standalone ===
-      true
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true
   );
 }
 
@@ -69,21 +64,18 @@ function getPlatform() {
 }
 
 export default function StorePwaInstallPrompt({
-  storeName,
-  storeShortName,
-  storeIcon,
-  themeColor,
   slug,
+  appName,
+  iconUrl,
+  themeColor = '#D90D13',
 }: StorePwaInstallPromptProps) {
   const [isStandalone, setIsStandalone] = useState(true);
-  const [isDismissed, setIsDismissed] = useState(true);
+  const [isDismissed, setIsDismissed] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [platform, setPlatform] = useState(() => getPlatform());
-
-  const dismissedStorageKey = `${DISMISSED_STORAGE_PREFIX}:${slug}`;
 
   useEffect(() => {
     const media = window.matchMedia('(display-mode: standalone)');
@@ -91,9 +83,6 @@ export default function StorePwaInstallPrompt({
     const frame = window.requestAnimationFrame(() => {
       setPlatform(getPlatform());
       setIsStandalone(isStandaloneMode());
-      setIsDismissed(
-        window.sessionStorage.getItem(dismissedStorageKey) === 'true',
-      );
     });
 
     function handleDisplayModeChange() {
@@ -123,17 +112,10 @@ export default function StorePwaInstallPrompt({
       );
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [dismissedStorageKey]);
-
-  function dismissPrompt() {
-    window.sessionStorage.setItem(dismissedStorageKey, 'true');
-    setIsDismissed(true);
-  }
+  }, []);
 
   async function handleInstallClick() {
-    if (!deferredPrompt) {
-      return;
-    }
+    if (!deferredPrompt) return;
 
     try {
       setIsInstalling(true);
@@ -166,7 +148,7 @@ export default function StorePwaInstallPrompt({
     return null;
   }
 
-  const showAndroidInstall = platform.isAndroid && Boolean(deferredPrompt);
+  const showAndroidInstall = platform.isAndroid && !!deferredPrompt;
   const showIosGuide = platform.isIos;
 
   if (!showAndroidInstall && !showIosGuide) {
@@ -174,191 +156,172 @@ export default function StorePwaInstallPrompt({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/55 p-3 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="w-full max-w-md overflow-hidden rounded-[32px] border border-white/10 bg-white shadow-[0_24px_80px_rgba(0,0,0,0.25)]">
-        <div
-          className="px-5 py-4 text-white"
-          style={{
-            background: `linear-gradient(135deg, ${themeColor}, #111827)`,
-          }}
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-14 w-14 flex-none items-center justify-center overflow-hidden rounded-2xl bg-white/95 text-zinc-950 shadow-sm">
-                {storeIcon ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={storeIcon}
-                    alt={`Logo ${storeName}`}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <ShoppingBagIcon className="h-7 w-7" />
-                )}
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/45 p-3 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="w-full max-w-md rounded-[34px] border border-zinc-200 bg-white p-5 shadow-[0_24px_80px_rgba(0,0,0,0.22)] sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-[24px] text-white shadow-sm"
+              style={{ backgroundColor: themeColor }}
+            >
+              {iconUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={iconUrl}
+                  alt={appName}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <ShoppingBagIcon className="h-8 w-8" />
+              )}
+            </div>
+
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+                Aplicativo
+              </p>
+              <h2 className="text-xl font-semibold tracking-tight text-[#181818]">
+                Instale {appName}
+              </h2>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsDismissed(true)}
+            className="flex h-10 w-10 flex-none items-center justify-center rounded-full text-zinc-400 transition hover:bg-[#F7F7F5] hover:text-[#181818]"
+            aria-label="Fechar aviso de instalacao"
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </button>
+        </div>
+
+        <p className="mt-5 text-sm font-medium leading-6 text-zinc-600">
+           Mais conforto e rapidez, acompanhe o status da sua entrega e 
+           acesse o app com apenas um clique, sem precisar procurar o link novamente.
+        </p>
+
+        {showAndroidInstall && (
+          <div className="mt-5 grid gap-3">
+            <div className="flex items-start gap-3 rounded-[24px] bg-[#F7F7F5] p-4">
+              <div className="mt-0.5 flex h-10 w-10 flex-none items-center justify-center rounded-[18px] bg-white text-[#181818]">
+                <ShoppingBagIcon className="h-5 w-5" />
               </div>
 
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-white/60">
-                  App da loja
+              <div>
+                <p className="text-sm font-semibold text-[#181818]">
+                  Pedido em poucos toques
                 </p>
-                <h2 className="truncate text-lg font-semibold tracking-tight">
-                  Instalar {storeShortName}
-                </h2>
+                <p className="mt-1 text-sm leading-6 text-zinc-500">
+                  Abra o app da loja, escolha seu Rango e finalize com mais
+                  agilidade.
+                </p>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={dismissPrompt}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
-              aria-label="Fechar aviso de instalação"
-            >
-              <XMarkIcon className="h-5 w-5" />
-            </button>
+            <div className="flex items-start gap-3 rounded-[24px] bg-[#F7F7F5] p-4">
+              <div className="mt-0.5 flex h-10 w-10 flex-none items-center justify-center rounded-[18px] bg-white text-[#181818]">
+                <BellAlertIcon className="h-5 w-5" />
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-[#181818]">
+                  Notificações
+                </p>
+                <p className="mt-1 text-sm leading-6 text-zinc-500">
+                  Seja notificado quando seu pedido saiu pra entrega e muito mais!
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="p-5 sm:p-6">
+        <div className="mt-5">
           {showAndroidInstall && (
-            <>
-              <div className="flex items-start gap-3 rounded-3xl bg-[#f7f7f5] p-4">
-                <div
-                  className="mt-0.5 flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-white"
-                  style={{ color: themeColor }}
-                >
-                  <DevicePhoneMobileIcon className="h-5 w-5" />
-                </div>
+            <div className="mt-3 grid gap-2">
+              <button
+                type="button"
+                onClick={handleInstallClick}
+                disabled={isInstalling}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#181818] px-5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                <ArrowDownTrayIcon className="h-5 w-5" />
+                {isInstalling ? 'Abrindo...' : 'Instalar app'}
+              </button>
 
-                <div>
-                  <p className="text-sm font-semibold text-zinc-950">
-                    Abra {storeName} como app
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-zinc-500">
-                    Instale a loja no celular para comprar mais rápido e voltar
-                    quando quiser pela tela inicial.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 grid gap-3">
-                <button
-                  type="button"
-                  onClick={handleInstallClick}
-                  disabled={isInstalling}
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-70"
-                  style={{ backgroundColor: themeColor }}
-                >
-                  <ArrowDownTrayIcon className="h-5 w-5" />
-                  {isInstalling ? 'Abrindo instalação...' : 'Instalar app'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={dismissPrompt}
-                  className="flex h-11 w-full items-center justify-center rounded-full border border-zinc-200 bg-white text-sm font-semibold text-zinc-950 transition hover:bg-zinc-50"
-                >
-                  Agora não
-                </button>
-              </div>
-            </>
+              <button
+                type="button"
+                onClick={() => setIsDismissed(true)}
+                className="flex h-11 w-full items-center justify-center rounded-full border border-zinc-200 bg-white text-sm font-semibold text-[#181818] transition hover:bg-zinc-50"
+              >
+                Agora nao
+              </button>
+            </div>
           )}
 
           {showIosGuide && (
-            <>
-              <div className="flex items-start gap-3 rounded-3xl bg-[#f7f7f5] p-4">
-                <div
-                  className="mt-0.5 flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-white"
-                  style={{ color: themeColor }}
-                >
-                  <DevicePhoneMobileIcon className="h-5 w-5" />
+            <div className="mt-3 space-y-3">
+              <div className="rounded-[26px] bg-[#F7F7F5] p-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-[16px] bg-white text-[#181818]">
+                    <ArrowUpOnSquareIcon className="h-5 w-5" />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold text-[#181818]">
+                      1. Toque em Compartilhar
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-zinc-500">
+                      Use o botao de compartilhamento do Safari.
+                    </p>
+                  </div>
                 </div>
 
-                <div>
-                  <p className="text-sm font-semibold text-zinc-950">
-                    Instale no iPhone
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-zinc-500">
-                    Adicione {storeName} à tela inicial para abrir a loja como
-                    um app.
-                  </p>
+                <div className="mt-4 flex items-start gap-3">
+                  <div className="mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-[16px] bg-white text-[#181818]">
+                    <ArrowDownTrayIcon className="h-5 w-5" />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold text-[#181818]">
+                      2. Adicione a Tela de Inicio
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-zinc-500">
+                      Depois confirme para instalar o app da {appName}.
+                    </p>
+                  </div>
                 </div>
-              </div>
-
-              <div className="mt-5 rounded-[28px] bg-[#f7f7f5] p-4">
-                <GuideStep
-                  icon={ArrowUpOnSquareIcon}
-                  iconColor={themeColor}
-                  title="1. Toque em Compartilhar"
-                  description="Use o botão de compartilhamento do Safari."
-                />
-
-                <GuideStep
-                  icon={ArrowDownTrayIcon}
-                  iconColor={themeColor}
-                  title="2. Toque em Adicionar à Tela de Início"
-                  description={`Depois confirme para instalar ${storeShortName}.`}
-                />
               </div>
 
               {!platform.isSafari && (
-                <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-700">
-                  Para instalar no iPhone, copie este link, abra o Safari e
-                  cole na barra de endereço.
-                </div>
-              )}
+                <>
+                  <p className="rounded-[18px] bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-700">
+                    Para instalar, copie o link e abra no Safari.
+                  </p>
 
-              <div className="mt-5 grid gap-3">
-                {!platform.isSafari && (
                   <button
                     type="button"
                     onClick={handleCopyLink}
-                    className="flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold text-white transition"
-                    style={{ backgroundColor: themeColor }}
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#181818] px-5 text-sm font-semibold text-white transition hover:opacity-90"
                   >
                     <ClipboardDocumentIcon className="h-5 w-5" />
                     {copiedLink ? 'Link copiado' : 'Copiar link'}
                   </button>
-                )}
+                </>
+              )}
 
-                <button
-                  type="button"
-                  onClick={dismissPrompt}
-                  className="flex h-11 w-full items-center justify-center rounded-full border border-zinc-200 bg-white text-sm font-semibold text-zinc-950 transition hover:bg-zinc-50"
-                >
-                  Entendi
-                </button>
-              </div>
-            </>
+              <button
+                type="button"
+                onClick={() => setIsDismissed(true)}
+                className="flex h-11 w-full items-center justify-center rounded-full border border-zinc-200 bg-white text-sm font-semibold text-[#181818] transition hover:bg-zinc-50"
+              >
+                Entendi
+              </button>
+            </div>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
 
-function GuideStep({
-  icon: Icon,
-  iconColor,
-  title,
-  description,
-}: {
-  icon: React.ElementType;
-  iconColor: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex items-start gap-3 [&+&]:mt-4">
-      <div
-        className="mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-2xl bg-white"
-        style={{ color: iconColor }}
-      >
-        <Icon className="h-5 w-5" />
-      </div>
-
-      <div>
-        <p className="text-sm font-semibold text-zinc-950">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-zinc-500">{description}</p>
+        <span className="sr-only">PWA da loja {slug}</span>
       </div>
     </div>
   );
