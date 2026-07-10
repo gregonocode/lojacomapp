@@ -4,16 +4,15 @@ import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import {
   BellIcon,
-  FireIcon,
   HeartIcon,
   HomeIcon,
   MagnifyingGlassIcon,
   ShoppingBagIcon,
   ShoppingCartIcon,
-  SparklesIcon,
   TagIcon,
   UserIcon,
 } from '@heroicons/react/24/outline';
+import { Astroid, Flame } from 'lucide-react';
 import StorePwaInstallPrompt from '@/app/components/pwa/StorePwaInstallPrompt';
 import { SystemPwaRegistrar } from '@/app/components/system-pwa-registrar';
 import { systemPwa } from '@/app/lib/pwa/manifests';
@@ -26,20 +25,19 @@ type Loja = {
   descricao: string | null;
   logo_url: string | null;
   cor_primaria: string | null;
+  banner_url: string | null;
   ativa: boolean;
 };
 
 type Produto = {
   id: string;
   nome: string;
-  marca: string | null;
   descricao: string | null;
   preco: number | string | null;
-  preco_antigo: number | string | null;
+  preco_promocional: number | string | null;
   imagem_url: string | null;
   estoque: number | null;
   ativo: boolean | null;
-  created_at: string | null;
 };
 
 type LojaPageProps = {
@@ -52,13 +50,13 @@ const categorias = [
   {
     id: 'todos',
     nome: 'Todos',
-    icon: FireIcon,
+    icon: Flame,
     ativo: true,
   },
   {
     id: 'novidades',
     nome: 'Novidades',
-    icon: SparklesIcon,
+    icon: Astroid,
   },
   {
     id: 'ofertas',
@@ -131,7 +129,7 @@ export default async function LojaPage({ params }: LojaPageProps) {
     (produto) => Number(produto.estoque ?? 0) > 0,
   ).length;
   const produtosEmOferta = produtos.filter((produto) =>
-    Boolean(produto.preco_antigo),
+    Boolean(produto.preco_promocional),
   ).length;
 
   const primaryColor = getSafeStoreColor(loja.cor_primaria);
@@ -210,12 +208,16 @@ export default async function LojaPage({ params }: LojaPageProps) {
 
           <section className="px-5 pt-2">
             <div
-              className="relative overflow-hidden rounded-[1.7rem] p-5 text-white shadow-xl"
+              className="relative min-h-[220px] overflow-hidden rounded-[1.7rem] bg-cover bg-center p-5 text-white shadow-xl"
               style={{
-                background: `linear-gradient(135deg, ${primaryColor}, #111827)`,
+                backgroundColor: primaryColor,
+                backgroundImage: loja.banner_url
+                  ? `url("${loja.banner_url}")`
+                  : `linear-gradient(135deg, ${primaryColor}, #111827)`,
                 boxShadow: `0 20px 45px ${primaryColor}26`,
               }}
             >
+              {!loja.banner_url && <>
               <div className="absolute bottom-0 right-2 h-36 w-36 rotate-[-12deg] rounded-[2rem] bg-white/20" />
 
               <div className="relative z-10 max-w-[64%]">
@@ -239,7 +241,7 @@ export default async function LojaPage({ params }: LojaPageProps) {
                 </a>
               </div>
 
-              <div className="absolute bottom-5 right-6 flex h-28 w-28 rotate-[-12deg] items-center justify-center overflow-hidden rounded-[2rem] bg-white/30 text-white">
+              {!loja.banner_url && <div className="absolute bottom-5 right-6 flex h-28 w-28 rotate-[-12deg] items-center justify-center overflow-hidden rounded-[2rem] bg-white/30 text-white">
                 {loja.logo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -250,15 +252,12 @@ export default async function LojaPage({ params }: LojaPageProps) {
                 ) : (
                   <ShoppingBagIcon className="h-14 w-14" />
                 )}
-              </div>
+              </div>}
+              </>}
             </div>
           </section>
 
-          <section className="mt-5 grid grid-cols-3 gap-3 px-5">
-            <MetricPill label="Produtos" value={String(produtos.length)} />
-            <MetricPill label="Estoque" value={String(produtosComEstoque)} />
-            <MetricPill label="Ofertas" value={String(produtosEmOferta)} />
-          </section>
+          
 
           <section className="mt-7 px-5">
             <div className="flex items-center justify-between">
@@ -429,7 +428,7 @@ function ProdutoCard({
       <div className="mt-3">
         <div className="flex items-center gap-1">
           <p className="truncate text-xs font-bold text-zinc-900">
-            {produto.marca || 'Produto'}
+            Produto
           </p>
           <span
             className="h-1.5 w-1.5 rounded-full"
@@ -446,12 +445,12 @@ function ProdutoCard({
 
         <div className="mt-2 flex flex-wrap items-end gap-1.5">
           <p className="text-sm font-black text-zinc-950">
-            {formatCurrency(produto.preco)}
+            {formatCurrency(produto.preco_promocional || produto.preco)}
           </p>
 
-          {produto.preco_antigo && (
+          {produto.preco_promocional && (
             <p className="pb-0.5 text-[10px] font-semibold text-zinc-300 line-through">
-              {formatCurrency(produto.preco_antigo)}
+              {formatCurrency(produto.preco)}
             </p>
           )}
         </div>
@@ -484,6 +483,7 @@ const getLojaBySlug = cache(async (slug: string) => {
       descricao,
       logo_url,
       cor_primaria,
+      banner_url,
       ativa
     `,
     )
@@ -507,19 +507,16 @@ const getProdutosByLojaId = cache(async (lojaId: string) => {
       `
       id,
       nome,
-      marca,
       descricao,
       preco,
-      preco_antigo,
+      preco_promocional,
       imagem_url,
       estoque,
-      ativo,
-      created_at
+      ativo
     `,
     )
     .eq('loja_id', lojaId)
-    .eq('ativo', true)
-    .order('created_at', { ascending: false });
+    .eq('ativo', true);
 
   if (error) {
     throw error;

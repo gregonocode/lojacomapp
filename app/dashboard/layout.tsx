@@ -7,6 +7,7 @@ import {
   Cog6ToothIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
+import { SystemPwaRegistrar } from '@/app/components/system-pwa-registrar';
 import { createClient } from '@/app/lib/supabase/server';
 import {
   DashboardMobileNavigation,
@@ -43,6 +44,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-[#F7F7F4] text-zinc-950">
+      <SystemPwaRegistrar />
       <div className="flex min-h-screen">
         <aside className="hidden w-[272px] shrink-0 border-r border-zinc-800 bg-[#0A0A0A] px-3 py-4 text-white lg:block">
           <div className="flex h-full flex-col">
@@ -85,22 +87,6 @@ export default async function DashboardLayout({
 
             <DashboardNavigation />
 
-            <div className="mt-auto rounded-3xl border border-zinc-800 bg-zinc-900 p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-sm font-black text-zinc-950">
-                  {iniciais}
-                </div>
-
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-white">
-                    {nomeUsuario}
-                  </p>
-                  <p className="truncate text-xs font-medium text-zinc-400">
-                    Administrador
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </aside>
 
@@ -145,7 +131,7 @@ export default async function DashboardLayout({
                       {nomeUsuario}
                     </p>
                     <p className="text-[11px] font-semibold text-zinc-400">
-                      Super Admin
+                      Admin
                     </p>
                   </div>
 

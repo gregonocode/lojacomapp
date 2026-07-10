@@ -46,8 +46,13 @@ const navigation = [
     icon: TruckIcon,
   },
   {
-    name: 'Tema',
-    href: '/dashboard/tema',
+    name: 'Identidade visual',
+    href: '/dashboard/configuracoes/identidade-visual',
+    icon: PaintBrushIcon,
+  },
+  {
+    name: 'Personalização',
+    href: '/dashboard/personalizacao',
     icon: PaintBrushIcon,
   },
   {
@@ -58,7 +63,7 @@ const navigation = [
 ];
 
 function isActivePath(pathname: string, href: string) {
-  if (href === '/dashboard') {
+  if (href === '/dashboard' || href === '/dashboard/configuracoes') {
     return pathname === href;
   }
 
@@ -121,7 +126,7 @@ export function DashboardMobileNavigation() {
 
   return (
     <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-      {navigation.slice(0, 6).map((item) => {
+      {navigation.map((item) => {
         const active = isActivePath(pathname, item.href);
 
         return (

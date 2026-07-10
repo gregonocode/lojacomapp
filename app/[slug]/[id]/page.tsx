@@ -16,10 +16,9 @@ type Produto = {
   id: string;
   loja_id: string;
   nome: string;
-  marca: string | null;
   descricao: string | null;
   preco: number | string | null;
-  preco_antigo: number | string | null;
+  preco_promocional: number | string | null;
   imagem_url: string | null;
   estoque: number | null;
   ativo: boolean | null;
@@ -30,6 +29,7 @@ type Loja = {
   nome: string;
   slug: string;
   cor_primaria: string | null;
+  banner_url: string | null;
   ativa: boolean;
 };
 
@@ -124,7 +124,7 @@ export default async function ProdutoPage({ params }: ProdutoPageProps) {
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
-                {produto.marca || loja.nome}
+                {loja.nome}
               </p>
 
               <h1 className="mt-2 text-2xl font-black leading-7 text-zinc-950">
@@ -143,12 +143,12 @@ export default async function ProdutoPage({ params }: ProdutoPageProps) {
 
           <div className="mt-6 flex flex-wrap items-end gap-2">
             <p className="text-3xl font-black text-zinc-950">
-              {formatCurrency(produto.preco)}
+              {formatCurrency(produto.preco_promocional || produto.preco)}
             </p>
 
-            {produto.preco_antigo && (
+            {produto.preco_promocional && (
               <p className="pb-1 text-sm font-bold text-zinc-300 line-through">
-                {formatCurrency(produto.preco_antigo)}
+                {formatCurrency(produto.preco)}
               </p>
             )}
           </div>
@@ -225,7 +225,7 @@ const getLojaBySlug = cache(async (slug: string) => {
 
   const { data, error } = await supabase
     .from('lojas')
-    .select('id, nome, slug, cor_primaria, ativa')
+    .select('id, nome, slug, cor_primaria, banner_url, ativa')
     .eq('slug', slug)
     .eq('ativa', true)
     .maybeSingle<Loja>();
@@ -247,10 +247,9 @@ const getProdutoById = cache(async (lojaId: string, id: string) => {
       id,
       loja_id,
       nome,
-      marca,
       descricao,
       preco,
-      preco_antigo,
+      preco_promocional,
       imagem_url,
       estoque,
       ativo

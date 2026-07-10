@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/app/lib/supabase/server';
-import ProdutoForm from './produto-form';
+import IdentidadeVisualForm from './identidade-visual-form';
 
-export default async function NovoProdutoPage() {
+export default async function IdentidadeVisualPage() {
   const supabase = await createClient();
 
   const {
@@ -13,15 +13,19 @@ export default async function NovoProdutoPage() {
     redirect('/login');
   }
 
-  const { data: loja } = await supabase
+  const { data: loja, error } = await supabase
     .from('lojas')
-    .select('id, nome, slug')
+    .select('id, nome, slug, descricao, logo_url, cor_primaria')
     .eq('proprietario_id', user.id)
     .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
 
   if (!loja) {
     redirect('/dashboard/configuracoes');
   }
 
-  return <ProdutoForm loja={loja} userId={user.id} />;
+  return <IdentidadeVisualForm userId={user.id} loja={loja} />;
 }

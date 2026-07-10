@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lojacomapp-system-v1';
+const CACHE_NAME = 'lojacomapp-system-v2';
 const CORE_ASSETS = [
   '/offline.html',
   '/icon/icon-192.png',
@@ -33,6 +33,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
 
+  if (request.method !== 'GET') {
+    return;
+  }
+
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request).catch(() => caches.match('/offline.html'))
@@ -40,13 +44,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
+  const url = new URL(request.url);
 
-      return fetch(request);
-    })
-  );
+  if (url.origin !== self.location.origin || !CORE_ASSETS.includes(url.pathname)) {
+    return;
+  }
+
+  event.respondWith(caches.match(url.pathname).then((cached) => cached || fetch(request)));
 });
