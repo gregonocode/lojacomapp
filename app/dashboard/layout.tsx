@@ -1,9 +1,11 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import {
+  BellIcon,
+  ChevronDownIcon,
   Cog6ToothIcon,
   MagnifyingGlassIcon,
-  ShoppingBagIcon,
 } from '@heroicons/react/24/outline';
 import { createClient } from '@/app/lib/supabase/server';
 import {
@@ -26,76 +28,185 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
+  const nomeUsuario =
+    user.user_metadata?.nome ||
+    user.user_metadata?.name ||
+    user.email?.split('@')[0] ||
+    'Lojista';
+
+  const iniciais = nomeUsuario
+    .split(' ')
+    .map((parte: string) => parte[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
-    <div className="min-h-screen bg-[#f7f7f5] text-zinc-950">
+    <div className="min-h-screen bg-[#F7F7F4] text-zinc-950">
       <div className="flex min-h-screen">
-        <aside className="hidden w-[272px] shrink-0 border-r border-zinc-200/80 bg-[#ebebe7] px-3 py-4 lg:block">
+        <aside className="hidden w-[272px] shrink-0 border-r border-zinc-800 bg-[#0A0A0A] px-3 py-4 text-white lg:block">
           <div className="flex h-full flex-col">
             <Link href="/dashboard" className="flex items-center gap-3 px-3">
-              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-purple-100 text-purple-800 shadow-sm ring-1 ring-purple-200/70">
-                <ShoppingBagIcon className="h-6 w-6" />
+              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-700">
+                <Image
+                  src="/icon/icon-512.png"
+                  alt="Logo da lojacomapp"
+                  width={44}
+                  height={44}
+                  className="h-full w-full object-cover"
+                />
               </div>
 
               <div className="min-w-0">
-                <p className="text-base font-bold tracking-tight">
+                <p className="text-base font-black tracking-tight">
                   lojacomapp
                 </p>
-                <p className="text-xs font-medium text-zinc-500">
+                <p className="text-xs font-semibold text-zinc-400">
                   Painel do lojista
                 </p>
               </div>
             </Link>
 
-            <div className="mt-5 px-1">
-              <div className="flex h-10 items-center gap-3 rounded-lg border border-zinc-200 bg-white px-3 shadow-sm">
-                <MagnifyingGlassIcon className="h-5 w-5 text-zinc-400" />
+            <div className="mt-6 px-1">
+              <div className="flex h-11 items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-3">
+                <MagnifyingGlassIcon className="h-5 w-5 text-zinc-500" />
                 <input
-                  placeholder="Buscar..."
-                  className="h-full w-full bg-transparent text-sm outline-none placeholder:text-zinc-400"
+                  placeholder="Buscar no painel..."
+                  className="h-full w-full bg-transparent text-sm font-medium text-white outline-none placeholder:text-zinc-500"
                 />
               </div>
             </div>
 
-            <div className="mt-6 px-2">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-500">
+            <div className="mt-7 px-3">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-zinc-400">
                 Principal
               </p>
             </div>
 
             <DashboardNavigation />
+
+            <div className="mt-auto rounded-3xl border border-zinc-800 bg-zinc-900 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-sm font-black text-zinc-950">
+                  {iniciais}
+                </div>
+
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-white">
+                    {nomeUsuario}
+                  </p>
+                  <p className="truncate text-xs font-medium text-zinc-400">
+                    Administrador
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-white/85 px-5 py-4 backdrop-blur-xl lg:hidden">
+          <header className="sticky top-0 z-30 hidden border-b border-zinc-200 bg-white/90 px-6 py-4 backdrop-blur-xl lg:block">
+            <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-5">
+              <div className="flex min-w-0 flex-1 items-center gap-4">
+                <div className="flex h-11 w-full max-w-md items-center gap-3 rounded-full border border-zinc-200 bg-[#F7F7F4] px-4">
+                  <MagnifyingGlassIcon className="h-5 w-5 text-zinc-400" />
+                  <input
+                    placeholder="Search Anything ..."
+                    className="h-full w-full bg-transparent text-sm font-medium text-zinc-800 outline-none placeholder:text-zinc-400"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button className="relative flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 transition hover:bg-zinc-50">
+                  <BellIcon className="h-5 w-5" />
+                  <span className="absolute right-3 top-3 h-2 w-2 rounded-full bg-[#CFC7FF] ring-2 ring-white" />
+                </button>
+
+                <button className="flex h-11 items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-800 transition hover:bg-zinc-50">
+                  PT
+                  <ChevronDownIcon className="h-4 w-4 text-zinc-400" />
+                </button>
+
+                <Link
+                  href="/dashboard/configuracoes"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 transition hover:bg-zinc-50"
+                >
+                  <Cog6ToothIcon className="h-5 w-5" />
+                </Link>
+
+                <div className="flex items-center gap-3 rounded-full border border-zinc-200 bg-white py-1 pl-2 pr-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-950 text-xs font-black text-white">
+                    {iniciais}
+                  </div>
+
+                  <div className="hidden min-w-0 sm:block">
+                    <p className="max-w-[150px] truncate text-sm font-black leading-4 text-zinc-950">
+                      {nomeUsuario}
+                    </p>
+                    <p className="text-[11px] font-semibold text-zinc-400">
+                      Super Admin
+                    </p>
+                  </div>
+
+                  <ChevronDownIcon className="h-4 w-4 text-zinc-400" />
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/90 px-4 py-4 backdrop-blur-xl lg:hidden">
             <div className="flex items-center justify-between">
               <Link href="/dashboard" className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 text-purple-800">
-                  <ShoppingBagIcon className="h-5 w-5" />
+                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-[#F4F2FF] ring-1 ring-zinc-200/70">
+                  <Image
+                    src="/icon/icon-512.png"
+                    alt="Logo da lojacomapp"
+                    width={40}
+                    height={40}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
 
                 <div>
-                  <p className="text-sm font-bold tracking-tight">
+                  <p className="text-sm font-black tracking-tight">
                     lojacomapp
                   </p>
-                  <p className="text-xs font-medium text-zinc-400">
+                  <p className="text-xs font-semibold text-zinc-400">
                     Dashboard
                   </p>
                 </div>
               </Link>
 
-              <Link
-                href="/dashboard/configuracoes"
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500"
-              >
-                <Cog6ToothIcon className="h-5 w-5" />
-              </Link>
+              <div className="flex items-center gap-2">
+                <button className="relative flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700">
+                  <BellIcon className="h-5 w-5" />
+                  <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#CFC7FF] ring-2 ring-white" />
+                </button>
+
+                <Link
+                  href="/dashboard/configuracoes"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700"
+                >
+                  <Cog6ToothIcon className="h-5 w-5" />
+                </Link>
+              </div>
+            </div>
+
+            <div className="mt-4 flex h-11 items-center gap-3 rounded-full border border-zinc-200 bg-[#F7F7F4] px-4">
+              <MagnifyingGlassIcon className="h-5 w-5 text-zinc-400" />
+              <input
+                placeholder="Buscar..."
+                className="h-full w-full bg-transparent text-sm font-medium text-zinc-800 outline-none placeholder:text-zinc-400"
+              />
             </div>
 
             <DashboardMobileNavigation />
           </header>
 
-          <main className="flex-1 p-5 lg:p-8">{children}</main>
+          <main className="flex-1 px-4 py-5 sm:px-5 lg:px-6 lg:py-6">
+            <div className="mx-auto w-full max-w-[1440px]">{children}</div>
+          </main>
         </div>
       </div>
     </div>

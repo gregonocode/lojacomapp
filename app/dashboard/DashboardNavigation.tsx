@@ -81,7 +81,7 @@ export function DashboardNavigation() {
               'group flex h-10 items-center justify-between rounded-lg px-3 text-sm transition',
               active
                 ? 'bg-white text-zinc-950 shadow-sm ring-1 ring-zinc-200'
-                : 'text-zinc-600 hover:bg-white/70 hover:text-zinc-950',
+                : 'text-zinc-400 hover:bg-zinc-900 hover:text-white',
             ].join(' ')}
           >
             <span
@@ -94,8 +94,8 @@ export function DashboardNavigation() {
                 className={[
                   'h-5 w-5 shrink-0',
                   active
-                    ? 'text-purple-700'
-                    : 'text-zinc-400 group-hover:text-zinc-700',
+                    ? 'text-zinc-950'
+                    : 'text-zinc-500 group-hover:text-zinc-300',
                 ].join(' ')}
               />
               {item.name}
@@ -105,7 +105,7 @@ export function DashboardNavigation() {
               <ChevronDownIcon
                 className={[
                   'h-4 w-4',
-                  active ? 'text-zinc-500' : 'text-zinc-300',
+                  active ? 'text-zinc-500' : 'text-zinc-600',
                 ].join(' ')}
               />
             )}
@@ -131,7 +131,7 @@ export function DashboardMobileNavigation() {
             className={[
               'flex h-10 shrink-0 items-center gap-2 rounded-lg border px-3 text-xs transition',
               active
-                ? 'border-purple-200 bg-purple-50 font-bold text-purple-800'
+                ? 'border-zinc-950 bg-zinc-950 font-bold text-white'
                 : 'border-zinc-200 bg-white font-medium text-zinc-600',
             ].join(' ')}
           >
