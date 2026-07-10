@@ -208,7 +208,10 @@ export default async function LojaPage({ params }: LojaPageProps) {
 
           <section className="px-5 pt-2">
             <div
-              className="relative min-h-[220px] overflow-hidden rounded-[1.7rem] bg-cover bg-center p-5 text-white shadow-xl"
+              className={[
+                'relative overflow-hidden rounded-[1.7rem] bg-cover bg-center text-white shadow-xl',
+                loja.banner_url ? 'aspect-[2/1]' : 'min-h-[220px] p-5',
+              ].join(' ')}
               style={{
                 backgroundColor: primaryColor,
                 backgroundImage: loja.banner_url
